@@ -43,25 +43,31 @@ server <- function(input,output) {
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
   stats<-summary(fit.reitsma) #output statistics from the fit 
   
- #Bivariate SROC curve
-  #output$SROC <- renderPlot( {
-#plot(fit.reitsma, sroclwd = 2, main = "SROC curve (bivariate model) for AUDIT-C data") #comes with curve, summary estimate, and conf region
-#points(fpr(AuditC), sens(AuditC), pch = 2) #add study sens/spec
-#legend("bottomright", c("data", "summary estimate"), pch = c(2,1)) #legend
-#legend("bottomleft", c("SROC", "conf. region"), lwd = c(2,1))
-#} )
-  
   # Basic ROC curve without anything else, add the other parts on top using an interactive vector (object orientation)
   #toggle pieces: data, summary estimate, conf region, pred region, extrapolate
-  plotticks<-logical(length=6) #default of six Falses
-    output$SROC <- renderPlot({ if ('1' %in% input$plotcheck) {plotticks[1] <- T} #change plotticks to T if ticked
-                                    if ('2' %in% input$plotcheck) {plotticks[2] <- T} #creates interactive vector
-                                    if ('3' %in% input$plotcheck) {plotticks[3] <- T}
-                                    if ('4' %in% input$plotcheck) {plotticks[4] <- T}
-                                    if ('5' %in% input$plotcheck) {plotticks[5] <- T}
-                                  plot(fit.reitsma, extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
+  plotticks<-logical(length=5) #default of six Falses
+  leglabticks <- matrix(nrow=5, ncol=1)
+  legendticks <- matrix(nrow=5, ncol=2) #empty matrix for legend arguments
+  leglabticks[1] <- "SROC curve"
+  legendticks[1,2] <- 1 #legend options for SROC curve
+    output$SROC <- renderPlot({ if ('1' %in% input$plotcheck) {plotticks[1] <- T
+                                                                leglabticks[2]<-"Summary estimate"
+                                                                legendticks[2,1]<-1} #change plotticks and legendticks if option 1 selected
+                                if ('2' %in% input$plotcheck) {plotticks[2] <- T
+                                                                leglabticks[3]<-"Confidence region"
+                                                                legendticks[3,2]<-1} #creates interactive vector
+                                if ('3' %in% input$plotcheck) {plotticks[3] <- T
+                                                                leglabticks[4]<-"Predictive region"
+                                                                legendticks[4,2]<-2}
+                                if ('4' %in% input$plotcheck) {plotticks[4] <- T} #Extrapolate
+                                if ('5' %in% input$plotcheck) {plotticks[5] <- T
+                                                                leglabticks[5]<-"Data"
+                                                                legendticks[5,1]<-2}
+                                  plot(fit.reitsma, main = "SROC curve (bivariate model) for AUDIT-C data",
+                                       extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
                                   if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
                                   if (plotticks[1]==T) {points(stats$coefficients[4,1], stats$coefficients[3,1])} #adding summary estimate
+                                  legend("bottomright", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
                                   }) 
   
  
