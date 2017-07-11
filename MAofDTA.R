@@ -14,7 +14,7 @@ ui <- fluidPage(
   fluidRow(column(3, wellPanel( fluidRow(p("Plot options")),
                                 fluidRow(dropdownButton(label = "Choose options", circle=F, status = "primary", width = 80,
                                                         checkboxGroupInput(inputId = "plotcheck", label = "Choose", 
-                                                        choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5, "Individual confidence regions"=6),
+                                                        choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
                                                         selected=list(1,2,3)))) #selected shows the default ticked boxes
                   )), #gives options to alter the aesthetics of the plot
            
@@ -27,9 +27,9 @@ ui <- fluidPage(
                                           conditionalPanel( condition="output.senscheck", textOutput("sens")), #conditional statement is a reactive R equality (when true the panel will run)
                                           conditionalPanel( condition="output.speccheck", textOutput("spec")),
                                           conditionalPanel( condition="output.AUCcheck", textOutput("AUC")),
-                                          conditionalPanel( condition="output.FPRcheck", textOutput("FPR")) ))), #statistics conditional on being ticked
+                                          conditionalPanel( condition="output.FPRcheck", textOutput("FPR")) ))) #statistics conditional on being ticked
  
-  fluidRow( textOutput(outputId="logical")) #print results from logical vector
+  #fluidRow( textOutput(outputId="logical")) #print results from logical vector
 )
 
 #-------------------------------------------------------------------------#
@@ -41,31 +41,31 @@ server <- function(input,output) {
   
   #Analyis
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
+  stats<-summary(fit.reitsma) #output statistics from the fit 
   
  #Bivariate SROC curve
-  output$SROC <- renderPlot( {
-plot(fit.reitsma, sroclwd = 2, main = "SROC curve (bivariate model) for AUDIT-C data") #comes with curve, summary estimate, and conf region
-points(fpr(AuditC), sens(AuditC), pch = 2) #add study sens/spec
-legend("bottomright", c("data", "summary estimate"), pch = c(2,1)) #legend
-legend("bottomleft", c("SROC", "conf. region"), lwd = c(2,1))
-} )
+  #output$SROC <- renderPlot( {
+#plot(fit.reitsma, sroclwd = 2, main = "SROC curve (bivariate model) for AUDIT-C data") #comes with curve, summary estimate, and conf region
+#points(fpr(AuditC), sens(AuditC), pch = 2) #add study sens/spec
+#legend("bottomright", c("data", "summary estimate"), pch = c(2,1)) #legend
+#legend("bottomleft", c("SROC", "conf. region"), lwd = c(2,1))
+#} )
   
-  # Will need a basic ROC curve without anything else, to then be able to add the other parts on top
-  #going to need a "middle man (plot) similar to the middle data example -> vector of true/false#
+  # Basic ROC curve without anything else, add the other parts on top using an interactive vector (object orientation)
   #toggle pieces: data, summary estimate, conf region, pred region, extrapolate
-  #Plot options vector printout
   plotticks<-logical(length=6) #default of six Falses
-    output$logical <- renderPrint({ if ('1' %in% input$plotcheck) {plotticks[1] <- T} #change plotticks to T if ticked
-                                    if ('2' %in% input$plotcheck) {plotticks[2] <- T}
+    output$SROC <- renderPlot({ if ('1' %in% input$plotcheck) {plotticks[1] <- T} #change plotticks to T if ticked
+                                    if ('2' %in% input$plotcheck) {plotticks[2] <- T} #creates interactive vector
                                     if ('3' %in% input$plotcheck) {plotticks[3] <- T}
                                     if ('4' %in% input$plotcheck) {plotticks[4] <- T}
                                     if ('5' %in% input$plotcheck) {plotticks[5] <- T}
-                                    if ('6' %in% input$plotcheck) {plotticks[6] <- T}
-                                  print(plotticks)}) #make interactive text
+                                  plot(fit.reitsma, extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
+                                  if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
+                                  if (plotticks[1]==T) {points(stats$coefficients[4,1], stats$coefficients[3,1])} #adding summary estimate
+                                  }) 
   
  
   #Add some stats
-  stats<-summary(fit.reitsma) #output statistics from the fit
   output$sens <- renderText(print(sprintf("Sensitivity: %4.3f", stats$coefficients[3,1]), quote=F)) #prints sensitivity
   output$spec <- renderText(print(sprintf("Specificity: %4.3f", 1-stats$coefficients[4,1]), quote=F)) #prints specificity
   output$AUC <- renderText(print(sprintf("AUC: %4.3f", stats$AUC[1]), quote=F)) #prints AUC
