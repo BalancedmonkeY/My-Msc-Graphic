@@ -11,26 +11,24 @@ library(shinyWidgets)
 ui <- fluidPage(
   fluidRow(titlePanel("Msc Project!")), #title
   
-  fluidRow(column(3, wellPanel( fluidRow(p("Plot options")),
+  fluidRow(column(4, #statistics
+                  wellPanel( fluidRow(column(6, p("Bivariate Meta-Analysis Statistics")), 
+                                      column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80,
+                                                               checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
+                                                                                 choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4), selected=list(1,2))) )),
+                            conditionalPanel( condition="output.senscheck", textOutput("sens")), #conditional statement is a reactive R equality (when true the panel will run)
+                           conditionalPanel( condition="output.speccheck", textOutput("spec")),
+                           conditionalPanel( condition="output.AUCcheck", textOutput("AUC")),
+                          conditionalPanel( condition="output.FPRcheck", textOutput("FPR")) )),
+           column(5, plotOutput(outputId="SROC")), #graph
+           column(3, wellPanel( fluidRow(p("Plot options")), #plot options
                                 fluidRow(dropdownButton(label = "Choose options", circle=F, status = "primary", width = 80,
                                                         checkboxGroupInput(inputId = "plotcheck", label = "Choose", 
-                                                        choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
-                                                        selected=list(1,2,3)))) #selected shows the default ticked boxes
-                  )), #gives options to alter the aesthetics of the plot
-           
-           column(6, plotOutput(outputId="SROC"))), #graph
-  
-  fluidRow(column(6, offset=3, wellPanel( fluidRow(column(6, p("Bivariate Meta-Analysis Statistics")), 
-                                                   column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80,
-                                                                            checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-                                                                            choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4), selected=list(1,2))) )),
-                                          conditionalPanel( condition="output.senscheck", textOutput("sens")), #conditional statement is a reactive R equality (when true the panel will run)
-                                          conditionalPanel( condition="output.speccheck", textOutput("spec")),
-                                          conditionalPanel( condition="output.AUCcheck", textOutput("AUC")),
-                                          conditionalPanel( condition="output.FPRcheck", textOutput("FPR")) ))) #statistics conditional on being ticked
- 
-  #fluidRow( textOutput(outputId="logical")) #print results from logical vector
-)
+                                                                          choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
+                                                                          selected=list(1,2,3)))) #selected shows the default ticked boxes
+                               ))),
+    fluidRow(p("Studies"))
+  )
 
 #-------------------------------------------------------------------------#
 
