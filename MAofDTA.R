@@ -12,14 +12,15 @@ ui <- fluidPage(
   fluidRow(titlePanel("Msc Project!")), #title
   
   fluidRow(column(4, #statistics
-                  wellPanel( fluidRow(column(6, p("Bivariate Meta-Analysis Statistics")), 
-                                      column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80,
+                  wellPanel( fluidRow(p("Bivariate Meta-Analysis Statistics")), 
+                             fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
+                                      column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                                checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-                                                                                 choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4), selected=list(1,2))) )),
-                            conditionalPanel( condition="output.senscheck", textOutput("sens")), #conditional statement is a reactive R equality (when true the panel will run)
-                           conditionalPanel( condition="output.speccheck", textOutput("spec")),
-                           conditionalPanel( condition="output.AUCcheck", textOutput("AUC")),
-                          conditionalPanel( condition="output.FPRcheck", textOutput("FPR")) )),
+                                                                                 choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4), selected=list(1,2))) )), 
+                             conditionalPanel( condition="output.senscheck", fluidRow(column(5, p("Sensitivity")), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
+                             conditionalPanel( condition="output.speccheck", fluidRow(column(5, p("Specificity")), column(2, textOutput("spec")), column(5, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
+                             conditionalPanel( condition="output.AUCcheck", fluidRow(column(5, p("AUC")), column(2, textOutput("AUC")))),
+                             conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, p("False-positivie rate")), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))))),
            column(5, plotOutput(outputId="SROC")), #graph
            column(3, wellPanel( fluidRow(p("Plot options")), #plot options
                                 fluidRow(dropdownButton(label = "Choose options", circle=F, status = "primary", width = 80,
@@ -56,7 +57,7 @@ server <- function(input,output) {
                                                                 legendticks[3,2]<-1} #creates interactive vector
                                 if ('3' %in% input$plotcheck) {plotticks[3] <- T
                                                                 leglabticks[4]<-"Predictive region"
-                                                                legendticks[4,2]<-2}
+                                                                legendticks[4,2]<-3}
                                 if ('4' %in% input$plotcheck) {plotticks[4] <- T} #Extrapolate
                                 if ('5' %in% input$plotcheck) {plotticks[5] <- T
                                                                 leglabticks[5]<-"Data"
@@ -70,10 +71,10 @@ server <- function(input,output) {
   
  
   #Add some stats
-  output$sens <- renderText(print(sprintf("Sensitivity: %4.3f", stats$coefficients[3,1]), quote=F)) #prints sensitivity
-  output$spec <- renderText(print(sprintf("Specificity: %4.3f", 1-stats$coefficients[4,1]), quote=F)) #prints specificity
-  output$AUC <- renderText(print(sprintf("AUC: %4.3f", stats$AUC[1]), quote=F)) #prints AUC
-  output$FPR <- renderText(print(sprintf("False-positive rate: %4.3f", stats$coefficients[4,1]), quote=F)) #prints FPrate
+  output$sens <- renderText(print(sprintf("%4.3f", stats$coefficients[3,1]), quote=F)) #prints sensitivity
+  output$spec <- renderText(print(sprintf("%4.3f", 1-stats$coefficients[4,1]))) #prints specificity
+  output$AUC <- renderText(print(sprintf("%4.3f", stats$AUC[1]))) #prints AUC
+  output$FPR <- renderText(print(sprintf("%4.3f", stats$coefficients[4,1]))) #prints FPrate
   #Making the print statistics interactive with the pulldown menu:
   output$senscheck <- reactive({'1' %in% input$statscheck}) #reactive boolean to see whether '1' (sensitivity has been checked) is in the checklist
   output$speccheck <- reactive({'2' %in% input$statscheck}) #needs to be reactive as can't do the correct condition in JavaScript
@@ -83,6 +84,10 @@ outputOptions(output, "senscheck", suspendWhenHidden = FALSE) #option needed for
 outputOptions(output, "speccheck", suspendWhenHidden = FALSE)
 outputOptions(output, "AUCcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "FPRcheck", suspendWhenHidden = FALSE)
+  #Adding confidence intervals
+  output$sensCI <- renderText(print(sprintf("(%4.3f, %4.3f)", stats$coefficients[3,5], stats$coefficients[3,6]), quote=F))
+  output$specCI <- renderText(print(sprintf("(%4.3f, %4.3f)", 1-stats$coefficients[4,6], 1-stats$coefficients[4,5]), quote=F))
+  output$FPRCI <- renderText(print(sprintf("(%4.3f, %4.3f)", stats$coefficients[4,5], stats$coefficients[4,6]), quote=F))
 }
 
 #-----------------------------------------------------------#
