@@ -5,6 +5,7 @@
 library(mada)
 library(shiny)
 library(shinyWidgets)
+library(DT)
 
 #------------------------------------------------------------#
 
@@ -31,7 +32,7 @@ ui <- fluidPage(
                                                                           choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
                                                                           selected=list(1,2,3)))) #selected shows the default ticked boxes
                                ))),
-    fluidRow(p("Studies"))
+    fluidRow(DT::dataTableOutput("sumdata")) #data in table
   )
 
 #-------------------------------------------------------------------------#
@@ -99,7 +100,12 @@ outputOptions(output, "LRcheck", suspendWhenHidden = FALSE)
   output$sensCI <- renderText(print(sprintf("(%4.3f, %4.3f)", sum.fit$coefficients[3,5], sum.fit$coefficients[3,6]), quote=F))
   output$specCI <- renderText(print(sprintf("(%4.3f, %4.3f)", 1-sum.fit$coefficients[4,6], 1-sum.fit$coefficients[4,5]), quote=F))
   output$FPRCI <- renderText(print(sprintf("(%4.3f, %4.3f)", sum.fit$coefficients[4,5], sum.fit$coefficients[4,6]), quote=F))
-}
+
+  
+  #Add table of studies
+  output$sumdata <- DT::renderDataTable({ datatable(AuditC)  })
+  
+  }
 
 #-----------------------------------------------------------#
 
