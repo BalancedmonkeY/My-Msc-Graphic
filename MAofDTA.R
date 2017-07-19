@@ -21,14 +21,20 @@ ui <- fluidPage(
                  fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6), selected=list(1,2))) )),
+                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HRSOC parameters"=7), selected=list(1,2))) )),
                  conditionalPanel( condition="output.senscheck", fluidRow(column(6, p("Sensitivity")), column(2, textOutput("sens")), column(4, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
                  conditionalPanel( condition="output.speccheck", fluidRow(column(6, p("Specificity")), column(2, textOutput("spec")), column(4, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
                  conditionalPanel( condition="output.AUCcheck", fluidRow(column(6, p("AUC")), column(2, textOutput("AUC")))),
                  conditionalPanel( condition="output.FPRcheck", fluidRow(column(6, p("False-positivie rate")), column(2, textOutput("FPR")), column(4, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
                  conditionalPanel( condition="output.DORcheck", fluidRow(column(6, p("Diagnostic Odds Ratio")), column(2, textOutput("DOR")))),
                  conditionalPanel( condition="output.LRcheck", fluidRow(column(6, p("Positive Likelihood Ratio")), column(2, textOutput("LRp"))),
-                                   fluidRow(column(6, p("Negative Likelihood Ratio")), column(2, textOutput("LRn"))))
+                                   fluidRow(column(6, p("Negative Likelihood Ratio")), column(2, textOutput("LRn")))),
+                 conditionalPanel( condition="output.HSROCcheck", fluidRow(p("HRSOC parameters")),
+                                                                  fluidRow(column(6, p("Alpha")), column(2, textOutput("Theta"))),
+                                                                  fluidRow(column(6, p("Lambda")), column(2, textOutput("Lambda"))),
+                                                                  fluidRow(column(6, p("Beta")), column(2, textOutput("Beta"))),
+                                                                  fluidRow(column(6, p("Sigma_theta")), column(2, textOutput("Sigth"))),
+                                                                  fluidRow(column(6, p("Sigma_alpha")), column(2, textOutput("Sigal"))))
                  )),
     
     column(7, plotOutput(outputId="SROC"),
@@ -84,6 +90,11 @@ server <- function(input,output) {
   output$DOR <- renderText(print(sprintf("%6.3f", mean(pts.fit$DOR)))) #prints summary DOR
   output$LRp <- renderText(print(sprintf("%6.3f", mean(pts.fit$posLR)))) #LR+
   output$LRn <- renderText(print(sprintf("%6.3f", mean(pts.fit$negLR)))) #LR-
+  output$Theta <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[1])))#theta
+  output$Lambda <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[2]))) #lambda
+  output$Beta <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[3]))) #beta
+  output$Sigth <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[4]))) #sigma_theta
+  output$Sigal <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[5]))) #sigma_alpha
   #Making the print statistics interactive with the pulldown menu:
   output$senscheck <- reactive({'1' %in% input$statscheck}) #reactive boolean to see whether '1' (sensitivity has been checked) is in the checklist
   output$speccheck <- reactive({'2' %in% input$statscheck}) #needs to be reactive as can't do the correct condition in JavaScript
@@ -91,12 +102,14 @@ server <- function(input,output) {
   output$FPRcheck <- reactive({'4' %in% input$statscheck})
   output$DORcheck <- reactive({'5' %in% input$statscheck})
   output$LRcheck <- reactive({'6' %in% input$statscheck})
+  output$HSROCcheck <- reactive({'7' %in% input$statscheck})
 outputOptions(output, "senscheck", suspendWhenHidden = FALSE) #option needed for conditional to function properly
 outputOptions(output, "speccheck", suspendWhenHidden = FALSE)
 outputOptions(output, "AUCcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "FPRcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "DORcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "LRcheck", suspendWhenHidden = FALSE)
+outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
   #Adding confidence intervals
   output$sensCI <- renderText(print(sprintf("(%4.3f, %4.3f)", sum.fit$coefficients[3,5], sum.fit$coefficients[3,6]), quote=F))
   output$specCI <- renderText(print(sprintf("(%4.3f, %4.3f)", 1-sum.fit$coefficients[4,6], 1-sum.fit$coefficients[4,5]), quote=F))
