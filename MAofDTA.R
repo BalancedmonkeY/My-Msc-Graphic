@@ -13,12 +13,11 @@ ui <- fluidPage(
   titlePanel("Msc Project!"), #title
   
     column(5, wellPanel(fluidRow(p("Plot options")), #plot options
-                 fluidRow(dropdownButton(label = "Choose options", circle=F, status = "primary", width = 80,
-                                         checkboxGroupInput(inputId = "plotcheck", label = "Choose", 
-                                                            choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
-                                                            selected=list(1,2,3)))),
+                 fluidRow(checkboxGroupInput(inputId = "plotcheck", label = "Choose", 
+                                            choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
+                                            selected=list(1,2,3)))),
                  br(),
-                 fluidRow(p("Bivariate Meta-Analysis Statistics")), 
+                 wellPanel(fluidRow(p("Bivariate Meta-Analysis Statistics")), 
                  fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
@@ -36,30 +35,6 @@ ui <- fluidPage(
               br(),
               DT::dataTableOutput("sumdata"))
                  )
-  
-  
-  #fluidRow(column(4, #statistics
-  #                wellPanel( fluidRow(p("Bivariate Meta-Analysis Statistics")), 
-  #                           fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
-  #                                    column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
-  #                                                             checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-  #                                                                               choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6), selected=list(1,2))) )), 
-  #                           conditionalPanel( condition="output.senscheck", fluidRow(column(6, p("Sensitivity")), column(2, textOutput("sens")), column(4, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
-  #                           conditionalPanel( condition="output.speccheck", fluidRow(column(6, p("Specificity")), column(2, textOutput("spec")), column(4, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
-  #                           conditionalPanel( condition="output.AUCcheck", fluidRow(column(6, p("AUC")), column(2, textOutput("AUC")))),
-  #                           conditionalPanel( condition="output.FPRcheck", fluidRow(column(6, p("False-positivie rate")), column(2, textOutput("FPR")), column(4, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
-  #                           conditionalPanel( condition="output.DORcheck", fluidRow(column(6, p("Diagnostic Odds Ratio")), column(2, textOutput("DOR")))),
-  #                           conditionalPanel( condition="output.LRcheck", fluidRow(column(6, p("Positive Likelihood Ratio")), column(2, textOutput("LRp"))),
-  #                                                                         fluidRow(column(6, p("Negative Likelihood Ratio")), column(2, textOutput("LRn")))))),
-  #         column(5, plotOutput(outputId="SROC")), #graph
-  #         column(3, wellPanel( fluidRow(p("Plot options")), #plot options
-  #                              fluidRow(dropdownButton(label = "Choose options", circle=F, status = "primary", width = 80,
-  #                                                      checkboxGroupInput(inputId = "plotcheck", label = "Choose", 
-  #                                                                        choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5),
-  #                                                                        selected=list(1,2,3)))) #selected shows the default ticked boxes
-  #                             ))),
-  #  fluidRow(DT::dataTableOutput("sumdata")) #data in table
-  #)
 
 #-------------------------------------------------------------------------#
 
