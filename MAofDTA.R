@@ -22,19 +22,20 @@ ui <- fluidPage(
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
                                                                       choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HRSOC parameters"=7), selected=list(1,2))) )),
-                 conditionalPanel( condition="output.senscheck", fluidRow(column(6, p("Sensitivity")), column(2, textOutput("sens")), column(4, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
-                 conditionalPanel( condition="output.speccheck", fluidRow(column(6, p("Specificity")), column(2, textOutput("spec")), column(4, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
-                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(6, p("AUC")), column(2, textOutput("AUC")))),
-                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(6, p("False-positivie rate")), column(2, textOutput("FPR")), column(4, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
-                 conditionalPanel( condition="output.DORcheck", fluidRow(column(6, p("Diagnostic Odds Ratio")), column(2, textOutput("DOR")))),
-                 conditionalPanel( condition="output.LRcheck", fluidRow(column(6, p("Positive Likelihood Ratio")), column(2, textOutput("LRp"))),
-                                   fluidRow(column(6, p("Negative Likelihood Ratio")), column(2, textOutput("LRn")))),
-                 conditionalPanel( condition="output.HSROCcheck", fluidRow(p("HRSOC parameters")),
-                                                                  fluidRow(column(6, p("Alpha")), column(2, textOutput("Theta"))),
-                                                                  fluidRow(column(6, p("Lambda")), column(2, textOutput("Lambda"))),
-                                                                  fluidRow(column(6, p("Beta")), column(2, textOutput("Beta"))),
-                                                                  fluidRow(column(6, p("Sigma_theta")), column(2, textOutput("Sigth"))),
-                                                                  fluidRow(column(6, p("Sigma_alpha")), column(2, textOutput("Sigal"))))
+                 conditionalPanel( condition="output.senscheck", fluidRow(column(6, "Sensitivity"), column(2, textOutput("sens")), column(4, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
+                 conditionalPanel( condition="output.speccheck", fluidRow(column(6, "Specificity"), column(2, textOutput("spec")), column(4, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
+                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(6, "AUC"), column(2, textOutput("AUC")))),
+                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(6, "False-positivie rate"), column(2, textOutput("FPR")), column(4, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
+                 conditionalPanel( condition="output.DORcheck", fluidRow(column(6, "Diagnostic Odds Ratio"), column(2, textOutput("DOR")))),
+                 conditionalPanel( condition="output.LRcheck", fluidRow(strong("Likelihood Ratios")),
+                                   fluidRow(column(6, "Positive"), column(2, textOutput("LRp"))),
+                                   fluidRow(column(6, "Negative"), column(2, textOutput("LRn")))),
+                 conditionalPanel( condition="output.HSROCcheck", fluidRow(strong("HRSOC parameters")),
+                                                                  fluidRow(column(6, "Alpha"), column(2, textOutput("Theta"))),
+                                                                  fluidRow(column(6, "Lambda"), column(2, textOutput("Lambda"))),
+                                                                  fluidRow(column(6, "Beta"), column(2, textOutput("Beta"))),
+                                                                  fluidRow(column(6, "Sigma_theta"), column(2, textOutput("Sigth"))),
+                                                                  fluidRow(column(6, "Sigma_alpha"), column(2, textOutput("Sigal"))))
                  )),
     
     column(7, plotOutput(outputId="SROC"),
