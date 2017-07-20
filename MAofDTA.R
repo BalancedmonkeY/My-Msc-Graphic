@@ -42,7 +42,7 @@ ui <- fluidPage(
                                                                   fluidRow(column(5, "Sigma_alpha"), column(2, textOutput("Sigal"))))
                  )),
     
-    column(9, plotOutput(outputId="SROC"),
+    column(9, uiOutput("plotui"),
               br(),
               DT::dataTableOutput("sumdata"))
                  )
@@ -58,6 +58,11 @@ server <- function(input,output) {
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
   sum.fit<-summary(fit.reitsma) #output statistics from the fit 
   pts.fit <- SummaryPts(fit.reitsma) #outputs posLR, negLR, invnegLR and DOR (as samples, have to mean to extract output)
+  
+  #Interactive plot
+  output$plotui <- renderUI ({
+    plotOutput("SROC", click="plot_click", hover="plot_hover")  #click and hover can then be used as inputs
+  })
   
   # Basic ROC curve without anything else, add the other parts on top using an interactive vector (object orientation)
   #toggle pieces: data, summary estimate, conf region, pred region, extrapolate
