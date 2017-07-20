@@ -13,34 +13,36 @@ library(DT)
 ui <- fluidPage(
   titlePanel("Msc Project!"), #title
   
-    column(5, wellPanel(fluidRow(h4("Plot options")), #plot options
+    column(3, wellPanel(fluidRow(h4("Plot options")), #plot options
                   fluidRow(checkboxInput(inputId="dataptscheck", label="Data points")),
                  fluidRow(checkboxGroupInput(inputId = "bivcheck", label = "Bivariate model options", 
-                                            choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3, "Extrapolate"=4, "Data points"=5, "HSROC curve"=6),
-                                            selected=list(1,2,3)))),
+                                            choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3),
+                                            selected=list(1,2,3))),
+                 fluidRow(checkboxGroupInput(inputId = "HSROCcheck", label = "HSROC options",
+                                             choices = list("SROC curve"=1, "Extrapolate"=2)))),
                  br(),
                  wellPanel(fluidRow(p("Bivariate Meta-Analysis Statistics")), 
                  fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
                                                                       choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HRSOC parameters"=7), selected=list(1,2))) )),
-                 conditionalPanel( condition="output.senscheck", fluidRow(column(6, "Sensitivity"), column(2, textOutput("sens")), column(4, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
-                 conditionalPanel( condition="output.speccheck", fluidRow(column(6, "Specificity"), column(2, textOutput("spec")), column(4, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
-                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(6, "AUC"), column(2, textOutput("AUC")))),
-                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(6, "False-positivie rate"), column(2, textOutput("FPR")), column(4, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
-                 conditionalPanel( condition="output.DORcheck", fluidRow(column(6, "Diagnostic Odds Ratio"), column(2, textOutput("DOR")))),
+                 conditionalPanel( condition="output.senscheck", fluidRow(column(5, "Sensitivity"), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
+                 conditionalPanel( condition="output.speccheck", fluidRow(column(5, "Specificity"), column(2, textOutput("spec")), column(5, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
+                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(5, "AUC"), column(2, textOutput("AUC")))),
+                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, "False-positivie rate"), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
+                 conditionalPanel( condition="output.DORcheck", fluidRow(column(5, "Diagnostic Odds Ratio"), column(2, textOutput("DOR")))),
                  conditionalPanel( condition="output.LRcheck", fluidRow(strong("Likelihood Ratios")),
-                                   fluidRow(column(6, "Positive"), column(2, textOutput("LRp"))),
-                                   fluidRow(column(6, "Negative"), column(2, textOutput("LRn")))),
+                                   fluidRow(column(5, "Positive"), column(2, textOutput("LRp"))),
+                                   fluidRow(column(5, "Negative"), column(2, textOutput("LRn")))),
                  conditionalPanel( condition="output.HSROCcheck", fluidRow(strong("HRSOC parameters")),
-                                                                  fluidRow(column(6, "Alpha"), column(2, textOutput("Theta"))),
-                                                                  fluidRow(column(6, "Lambda"), column(2, textOutput("Lambda"))),
-                                                                  fluidRow(column(6, "Beta"), column(2, textOutput("Beta"))),
-                                                                  fluidRow(column(6, "Sigma_theta"), column(2, textOutput("Sigth"))),
-                                                                  fluidRow(column(6, "Sigma_alpha"), column(2, textOutput("Sigal"))))
+                                                                  fluidRow(column(5, "Alpha"), column(2, textOutput("Theta"))),
+                                                                  fluidRow(column(5, "Lambda"), column(2, textOutput("Lambda"))),
+                                                                  fluidRow(column(5, "Beta"), column(2, textOutput("Beta"))),
+                                                                  fluidRow(column(5, "Sigma_theta"), column(2, textOutput("Sigth"))),
+                                                                  fluidRow(column(5, "Sigma_alpha"), column(2, textOutput("Sigal"))))
                  )),
     
-    column(7, plotOutput(outputId="SROC"),
+    column(9, plotOutput(outputId="SROC"),
               br(),
               DT::dataTableOutput("sumdata"))
                  )
@@ -71,15 +73,15 @@ server <- function(input,output) {
                                 if ('3' %in% input$bivcheck) {plotticks[3] <- T
                                                                 leglabticks[4]<-"Predictive region"
                                                                 legendticks[4,2]<-3}
-                                if ('4' %in% input$bivcheck) {plotticks[4] <- T} #Extrapolate
+                                if ('2' %in% input$HSROCcheck) {plotticks[4] <- T} #Extrapolate
                                 if (input$dataptscheck==T) {plotticks[5] <- T
                                                                 leglabticks[5]<-"Data"
                                                                 legendticks[5,1]<-2}
-                                if ('6' %in% input$bivcheck) {plotticks[6] <- T
+                                if ('1' %in% input$HSROCcheck) {plotticks[6] <- T
                                                                 leglabticks[1]<-"HSROC curve"
                                                                 legendticks[1,2]<-1}
-                                  plot(fit.reitsma, main = "SROC curve (bivariate model) for AUDIT-C data",
-                                       HSROC=plotticks[6], extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
+                                  plot(fit.reitsma, main = "Bivariate model for AUDIT-C data",
+                                       HSROC=plotticks[6], extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="", sroclwd=2) #plot where options are dependent on interactive vector plotticks
                                   if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
                                   if (plotticks[1]==T) {points(sum.fit$coefficients[4,1], sum.fit$coefficients[3,1])} #adding summary estimate
                                   legend("bottomright", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
