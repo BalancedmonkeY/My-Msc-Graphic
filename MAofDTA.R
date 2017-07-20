@@ -2,6 +2,7 @@
 ### Creating basic ROC curve ###
 # Going to have a first tab which is just a standard ROC curve and you toggle what features/stats one wants #
 
+#install.packages("madaedit.tar.gz", repos = NULL, type = "source") #install amended mada package (needs to be done only once)
 library(mada)
 library(shiny)
 library(shinyWidgets)
@@ -76,7 +77,7 @@ server <- function(input,output) {
                                                                 leglabticks[5]<-"Data"
                                                                 legendticks[5,1]<-2}
                                   plot(fit.reitsma, main = "SROC curve (bivariate model) for AUDIT-C data",
-                                       extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
+                                       HSROC=T, extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="") #plot where options are dependent on interactive vector plotticks
                                   if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
                                   if (plotticks[1]==T) {points(sum.fit$coefficients[4,1], sum.fit$coefficients[3,1])} #adding summary estimate
                                   legend("bottomright", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
