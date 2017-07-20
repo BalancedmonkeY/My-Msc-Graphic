@@ -51,19 +51,25 @@ ui <- fluidPage(
 
 server <- function(input,output) {
   
+  #Ghost data (won't change)
+  data(AuditC)
+  ghost<-AuditC
+  ghost$sens<-sens(ghost) #add sensitivity of each study to dataframe
+  ghost$fpr<-fpr(ghost)
+    
+  #Interactive plot (needs to be first as data will be dependent on plot_click)
+  output$plotui <- renderUI ({
+    plotOutput("SROC", click="plot_click", hover="plot_hover")  #click and hover can then be used as inputs
+  })
+  
   #Data
-  data("AuditC") #basic data to have a demo with
+  curdata<-AuditC #demo data to work with
   
   #Analyis
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
   sum.fit<-summary(fit.reitsma) #output statistics from the fit 
   pts.fit <- SummaryPts(fit.reitsma) #outputs posLR, negLR, invnegLR and DOR (as samples, have to mean to extract output)
-  
-  #Interactive plot
-  output$plotui <- renderUI ({
-    plotOutput("SROC", click="plot_click", hover="plot_hover")  #click and hover can then be used as inputs
-  })
-  
+
   # Basic ROC curve without anything else, add the other parts on top using an interactive vector (object orientation)
   #toggle pieces: data, summary estimate, conf region, pred region, extrapolate
   plotticks<-logical(length=6) #default of six Falses
@@ -128,7 +134,7 @@ outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
 
   
   #Add table of studies
-  output$sumdata <- DT::renderDataTable({ datatable(AuditC)  })
+  output$sumdata <- DT::renderDataTable({ datatable(ghost)  })
   
   }
 
