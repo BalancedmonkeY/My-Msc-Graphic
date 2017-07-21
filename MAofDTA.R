@@ -8,6 +8,12 @@ library(shiny)
 library(shinyWidgets)
 library(DT)
 
+exclusions <- data.frame(matrix(nrow=0, ncol=6))
+names(exclusions)<-c("TP", "FN", "FP", "TN", "sens", "fpr")
+isolate(exclusions)
+curdata <- data.frame(matrix(nrow=14, ncol=6))
+names(curdata)<-c("TP", "FN", "FP", "TN", "sens", "fpr")
+
 #------------------------------------------------------------#
 
 ui <- fluidPage(
@@ -23,7 +29,7 @@ ui <- fluidPage(
                  br(),
                  wellPanel(fluidRow(p("Bivariate Meta-Analysis Statistics")), 
                  fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
-                          column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
+                          column(6, dropdownButton(label="Other", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
                                                                       choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HRSOC parameters"=7), selected=list(1,2))) )),
                  conditionalPanel( condition="output.senscheck", fluidRow(column(5, "Sensitivity"), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
@@ -52,7 +58,7 @@ ui <- fluidPage(
 server <- function(input,output) {
   
   #Ghost data (won't change)
-  data(AuditC)
+  data(AuditC) #demo data to work with
   ghost<-AuditC
   ghost$sens<-sens(ghost) #add sensitivity of each study to dataframe
   ghost$fpr<-fpr(ghost)
@@ -62,8 +68,6 @@ server <- function(input,output) {
     plotOutput("SROC", click="plot_click", hover="plot_hover")  #click and hover can then be used as inputs
   })
   
-  #Data
-  curdata<-AuditC #demo data to work with
   
   #Analyis
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
@@ -75,7 +79,8 @@ server <- function(input,output) {
   plotticks<-logical(length=6) #default of six Falses
   leglabticks <- matrix(nrow=5, ncol=1)
   legendticks <- matrix(nrow=5, ncol=2) #empty matrix for legend arguments
-    output$SROC <- renderPlot({ if ('1' %in% input$bivcheck) {plotticks[1] <- T
+    output$SROC <- renderPlot({ curdata<-ghost #updating data
+                                if ('1' %in% input$bivcheck) {plotticks[1] <- T
                                                                 leglabticks[2]<-"Summary estimate"
                                                                 legendticks[2,1]<-1} #change plotticks and legendticks if option 1 selected
                                 if ('2' %in% input$bivcheck) {plotticks[2] <- T
@@ -86,14 +91,15 @@ server <- function(input,output) {
                                                                 legendticks[4,2]<-3}
                                 if ('2' %in% input$HSROCcheck) {plotticks[4] <- T} #Extrapolate
                                 if (input$dataptscheck==T) {plotticks[5] <- T
-                                                                leglabticks[5]<-"Data"
+                                                                leglabticks[5]<-"Data" #Data points
                                                                 legendticks[5,1]<-2}
                                 if ('1' %in% input$HSROCcheck) {plotticks[6] <- T
-                                                                leglabticks[1]<-"HSROC curve"
+                                                                leglabticks[1]<-"HSROC curve" #Curve
                                                                 legendticks[1,2]<-1}
                                   plot(fit.reitsma, main = "Bivariate model for AUDIT-C data",
                                        HSROC=plotticks[6], extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="", sroclwd=2) #plot where options are dependent on interactive vector plotticks
-                                  if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
+                                  if (plotticks[5]==T) {points(ghost$fpr, ghost$sens, pch=2, col="gray") #add ghost data points
+                                                        points(curdata$fpr, curdata$sens, pch=2)} #add active data points
                                   if (plotticks[1]==T) {points(sum.fit$coefficients[4,1], sum.fit$coefficients[3,1])} #adding summary estimate
                                   legend("bottomright", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
                                   }) 
@@ -134,7 +140,17 @@ outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
 
   
   #Add table of studies
-  output$sumdata <- DT::renderDataTable({ datatable(ghost)  })
+  output$sumdata <- DT::renderDataTable({ 
+    exclusions0 <- nearPoints(ghost, input$plot_click, xvar="fpr", yvar="sens", threshold=4, maxpoints=1) #chooses rows from the data that were clicked upon
+    exclusions00<-exclusions0
+    exclusions <- rbind(exclusions00, exclusions)
+    datatable(exclusions)
+    #curdata<-ghost[!(ghost$sens==exclusions$sens & ghost$fpr==exclusions$fpr), ]
+    #if (is.na(exclusions[1,1])) {
+    #  datatable(ghost)
+    #} else {
+    #datatable(exclusions0) }
+  }) 
   
   }
 
