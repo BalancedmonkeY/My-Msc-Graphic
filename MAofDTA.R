@@ -2,18 +2,21 @@
 ### Creating basic ROC curve ###
 # Going to have a first tab which is just a standard ROC curve and you toggle what features/stats one wants #
 
-#install.packages("madaedit.tar.gz", repos = NULL, type = "source") #install amended mada package (needs to be done only once)
+#install.packages("madaedit.tar.gz", repos = NULL, type = "source") #install amended mada package (needs to be done only once), gotta instal dependencies manually
 library(mada)
 library(shiny)
 library(shinyWidgets)
 library(DT)
+
+#Made necessary fixes
+#Said '95%', changes 'HRSOC', made HSROC parameters Greek symbols, created footnote of what model used, made plot square and centered, Added study authors and year, made sens and spec 3dp, added total ptps column,removed border on legend 
 
 #------------------------------------------------------------#
 
 ui <- fluidPage(
   titlePanel("Msc Project!"), #title
   
-    column(3, wellPanel(fluidRow(h4("Plot options")), #plot options
+    column(5, wellPanel(fluidRow(h4("Plot options")), #plot options
                   fluidRow(checkboxInput(inputId="dataptscheck", label="Data points")),
                  fluidRow(checkboxGroupInput(inputId = "bivcheck", label = "Bivariate model options", 
                                             choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3),
@@ -22,28 +25,30 @@ ui <- fluidPage(
                                              choices = list("SROC curve"=1, "Extrapolate"=2)))),
                  br(),
                  wellPanel(fluidRow(p("Bivariate Meta-Analysis Statistics")), 
-                 fluidRow(column(6, checkboxInput("intervals", label="Confidence intervals")),#checkbox for option to show confidence intervals
+                 fluidRow(column(6, checkboxInput("intervals", label="95% Confidence intervals")),#checkbox for option to show confidence intervals
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HRSOC parameters"=7), selected=list(1,2))) )),
+                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HSROC parameters"=7), selected=list(1,2))) )),
                  conditionalPanel( condition="output.senscheck", fluidRow(column(5, "Sensitivity"), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
                  conditionalPanel( condition="output.speccheck", fluidRow(column(5, "Specificity"), column(2, textOutput("spec")), column(5, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
                  conditionalPanel( condition="output.AUCcheck", fluidRow(column(5, "AUC"), column(2, textOutput("AUC")))),
-                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, "False-positivie rate"), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
+                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, "False-positive rate"), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
                  conditionalPanel( condition="output.DORcheck", fluidRow(column(5, "Diagnostic Odds Ratio"), column(2, textOutput("DOR")))),
                  conditionalPanel( condition="output.LRcheck", fluidRow(strong("Likelihood Ratios")),
                                    fluidRow(column(5, "Positive"), column(2, textOutput("LRp"))),
                                    fluidRow(column(5, "Negative"), column(2, textOutput("LRn")))),
-                 conditionalPanel( condition="output.HSROCcheck", fluidRow(strong("HRSOC parameters")),
-                                                                  fluidRow(column(5, "Alpha"), column(2, textOutput("Theta"))),
-                                                                  fluidRow(column(5, "Lambda"), column(2, textOutput("Lambda"))),
-                                                                  fluidRow(column(5, "Beta"), column(2, textOutput("Beta"))),
-                                                                  fluidRow(column(5, "Sigma_theta"), column(2, textOutput("Sigth"))),
-                                                                  fluidRow(column(5, "Sigma_alpha"), column(2, textOutput("Sigal"))))
+                 conditionalPanel( condition="output.HSROCcheck", fluidRow(strong("HSROC parameters")),
+                                                                  fluidRow(column(5, HTML("&theta;")), column(2, textOutput("Theta"))),
+                                                                  fluidRow(column(5, HTML("&lambda;")), column(2, textOutput("Lambda"))),
+                                                                  fluidRow(column(5, HTML("&beta;")), column(2, textOutput("Beta"))),
+                                                                  fluidRow(column(5, HTML("&sigma;<sub>&theta;</sub>")), column(2, textOutput("Sigth"))),
+                                                                  fluidRow(column(5, HTML("&sigma;<sub>&alpha;</sub>")), column(2, textOutput("Sigal"))))
                  )),
     
-    column(9, plotOutput(outputId="SROC"),
-              br(),
+    column(7, fluidRow(align="center", plotOutput(outputId="SROC", width="450px", height="450px"), #fixed width to keep ROC space square
+           h6("Note: Bivariate random-effects model fitted")),   
+           br(),
+           h4("Data"),
               DT::dataTableOutput("sumdata"))
                  )
 
@@ -53,6 +58,17 @@ server <- function(input,output) {
   
   #Data
   data("AuditC") #basic data to have a demo with
+  #Add Study authors and year
+  AuditC$Author <- c("Aalto","Aertgeert", "Aertgeert", "Bradley", "Bradley", "Bush", "Gomez", "Gordon", "Gual", "Rumpf", "Seale", "Selin", "Tsai", "Tuunanen")
+  AuditC$Year <- c(2006, 2001, 2002, 2003, 2007, 1998, 2006, 2001, 2002, 2002, 2006, 2006, 2005, 2007)
+  #Add sens and spec (to 3 dp)
+  AuditC$sensitivity <- round(sens(AuditC), digits=3)
+  AuditC$FalsePositiveRate <- round(fpr(AuditC), digits=3)
+  #Add total number of participants
+  AuditC$No_of_participants <- AuditC$TP+AuditC$FN+AuditC$FP+AuditC$TN
+  #Reorder columns ready for output in datatable
+  AuditC<-AuditC[,c(5,6,1,2,3,4,9,7,8)]
+  
   
   #Analyis
   fit.reitsma <- reitsma(AuditC) #fits a bivariate model
@@ -84,7 +100,7 @@ server <- function(input,output) {
                                        HSROC=plotticks[6], extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="", sroclwd=2) #plot where options are dependent on interactive vector plotticks
                                   if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
                                   if (plotticks[1]==T) {points(sum.fit$coefficients[4,1], sum.fit$coefficients[3,1])} #adding summary estimate
-                                  legend("bottomright", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
+                                  legend("bottomright", bty="n", leglabticks, pch = legendticks[,1], lty=legendticks[,2], lwd=c(2,NA,1,1,NA))
                                   }) 
   
  
@@ -123,7 +139,7 @@ outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
 
   
   #Add table of studies
-  output$sumdata <- DT::renderDataTable({ datatable(AuditC)  })
+  output$sumdata <- DT::renderDataTable({ datatable(AuditC, colnames=c("Author","Year", "TP","FN", "FP", "TN", "No. of participants", "Sensitivity", "False-positive rate"))  })
   
   }
 
