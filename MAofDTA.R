@@ -7,11 +7,17 @@ library(mada)
 library(shiny)
 library(shinyWidgets)
 library(DT)
+library(mvtnorm)
+library(ellipse)
+library(mvmeta)
+
+
 
 
 #------------------------------------------------------------#
 
 ui <- fluidPage(
+  
   titlePanel("Msc Project!"), #title
   
   tabsetPanel( #enables tabs
@@ -23,27 +29,28 @@ ui <- fluidPage(
                                             choices = list("Point estimate"=1, "Confidence region"=2, "Predictive region"=3),
                                             selected=list(1,2,3))),
                  fluidRow(checkboxGroupInput(inputId = "HSROCcheck", label = "HSROC options",
-                                             choices = list("SROC curve"=1, "Extrapolate"=2)))),
-                 br(),
+                                             choices = list("SROC curve"=1, "Extrapolate"=2))),
+                 br()),
                  wellPanel(fluidRow(p("Bivariate Meta-Analysis Statistics")), 
-                 fluidRow(column(6, checkboxInput("intervals", label="95% Confidence intervals")),#checkbox for option to show confidence intervals
+                 fluidRow(column(6, checkboxInput("intervals", label="95% Confidence intervals / Standard Deviations")),#checkbox for option to show confidence intervals
                           column(6, dropdownButton(label="Choose statistics", circle=F, status="primary", width=80, size="sm",
                                                    checkboxGroupInput(inputId="statscheck", label="Choose", #drop down menu for the statistics
-                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "AUC"=3, "FPR"=4, "DOR"=5, "Likelihood Ratios"=6, "HSROC parameters"=7), selected=list(1,2))) )),
-                 conditionalPanel( condition="output.senscheck", fluidRow(column(5, "Sensitivity"), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
-                 conditionalPanel( condition="output.speccheck", fluidRow(column(5, "Specificity"), column(2, textOutput("spec")), column(5, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
-                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(5, "AUC"), column(2, textOutput("AUC")))),
-                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, "False-positive rate"), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
-                 conditionalPanel( condition="output.DORcheck", fluidRow(column(5, "Diagnostic Odds Ratio"), column(2, textOutput("DOR")))),
+                                                                      choices=list("Sensitivity"=1, "Specificity"=2, "Covariance"=3, "AUC"=4, "FPR"=5, "DOR"=6, "Likelihood Ratios"=7, "HSROC parameters"=8), selected=list(1,5,6))) )),
+                 conditionalPanel( condition="output.senscheck", fluidRow(column(5, "Sensitivity:"), column(2, textOutput("sens")), column(5, conditionalPanel(condition="input.intervals", textOutput("sensCI"))))), #conditional statement is a reactive R equality (when true the panel will run)
+                 conditionalPanel( condition="output.speccheck", fluidRow(column(5, "Specificity:"), column(2, textOutput("spec")), column(5, conditionalPanel(condition="input.intervals", textOutput("specCI"))))), #conditional confidence intervals
+                 conditionalPanel( condition="output.covcheck", fluidRow(column(5, "Covariance:"), column(2, textOutput("cov")))), 
+                 conditionalPanel( condition="output.AUCcheck", fluidRow(column(5, "AUC:"), column(2, textOutput("AUC")))),
+                 conditionalPanel( condition="output.FPRcheck", fluidRow(column(5, "False-positive rate:"), column(2, textOutput("FPR")), column(5, conditionalPanel(condition="input.intervals", textOutput("FPRCI"))))),
+                 conditionalPanel( condition="output.DORcheck", fluidRow(column(5, "Diagnostic Odds Ratio:"), column(2, textOutput("DOR")), column(5, conditionalPanel(condition="input.intervals", textOutput("DORsd"))))),
                  conditionalPanel( condition="output.LRcheck", fluidRow(strong("Likelihood Ratios")),
-                                   fluidRow(column(5, "Positive"), column(2, textOutput("LRp"))),
-                                   fluidRow(column(5, "Negative"), column(2, textOutput("LRn")))),
+                                   fluidRow(column(5, "Positive:"), column(2, textOutput("LRp")), column(5, conditionalPanel(condition="input.intervals", textOutput("pLRsd")))),
+                                   fluidRow(column(5, "Negative:"), column(2, textOutput("LRn")), column(5, conditionalPanel(condition="input.intervals", textOutput("nLRsd"))))),
                  conditionalPanel( condition="output.HSROCcheck", fluidRow(strong("HSROC parameters")),
-                                                                  fluidRow(column(5, HTML("&theta;")), column(2, textOutput("Theta"))),
-                                                                  fluidRow(column(5, HTML("&lambda;")), column(2, textOutput("Lambda"))),
-                                                                  fluidRow(column(5, HTML("&beta;")), column(2, textOutput("Beta"))),
-                                                                  fluidRow(column(5, HTML("&sigma;<sub>&theta;</sub>")), column(2, textOutput("Sigth"))),
-                                                                  fluidRow(column(5, HTML("&sigma;<sub>&alpha;</sub>")), column(2, textOutput("Sigal"))))
+                                                                  fluidRow(column(5, HTML("&theta;:")), column(2, textOutput("Theta"))),
+                                                                  fluidRow(column(5, HTML("&lambda;:")), column(2, textOutput("Lambda"))),
+                                                                  fluidRow(column(5, HTML("&beta;:")), column(2, textOutput("Beta"))),
+                                                                  fluidRow(column(5, HTML("&sigma;<sub>&theta;</sub>:")), column(2, textOutput("Sigth"))),
+                                                                  fluidRow(column(5, HTML("&sigma;<sub>&alpha;</sub>:")), column(2, textOutput("Sigal"))))
                  )),
     
     column(8, fluidRow(align="center", plotOutput(outputId="SROC", width="450px", height="450px"), #fixed width to keep ROC space square
@@ -54,11 +61,14 @@ ui <- fluidPage(
                  ),
 
   tabPanel("Sensitivity Analysis", 
+           
            fluidRow(column(3, wellPanel(checkboxGroupInput(inputId="studies", label="Included studies",
                                                   choices=list("Aalto (2006)"=1, "Aertgeerts (2001)"=2, "Aertgeerts (2002)"=3, "Bradley (2003)"=4, "Bradley (2007)"=5, "Bush (1998)"=6, "Gomez (2006)"=7, "Gordon (2001)"=8, "Gual (2002)"=9, "Rumpf (2002)"=10, "Seale (2006)"=11, "Selin (2006)"=12, "Tsai (2005)"=13, "Tuunanen (2007)"=14),
-                                                  selected=list(1,2,3,4,5,6,7,8,9,10,11,12,13,14)), #checkboxes for studies
-                               actionButton(inputId="rerun", label="RUN ANALYSIS") #Button to initiate re-running of sensitivity analysis
-                               )),
+                                                  selected=list(1,2,3,4,5,6,7,8,9,10,11,12,13,14)) #checkboxes for studies
+                               
+                               ),
+                           wellPanel(h5("Hover over plot for individual study summaries"),
+                                     textOutput("hoverinfo"))),
            column(9, fluidRow(column(7, align="center", uiOutput(outputId="sensplot")), #interactive plot
                               column(5, wellPanel(fluidRow(h4("Plot options")), #plot options
                                                   fluidRow(checkboxInput(inputId="dataptscheck2", label="Data points", value=T)),
@@ -73,10 +83,11 @@ ui <- fluidPage(
                                                    h6(textOutput("origspec"))), #original results
                                          column(5, h5("Current Analysis"),
                                                    h6(textOutput("cursens")),
-                                                   h6(textOutput("curspec")))))   ))#current results 
+                                                   h6(textOutput("curspec")))),
+                                fluidRow(h6("Note: Estimates and 95% Confidence Intervals from bivariate random effects model")))   ))#current results 
            )),
-    fluidRow(wellPanel(h5("Hover over plot for individual study summaries"),
-                       textOutput("hoverinfo")))
+           fluidRow(h2(HTML("<font color=\"#FFFFFF\">Test<b>"))) #quick fix for extending the page to have a scrollbar at start
+
   )
 )
 )
@@ -106,9 +117,10 @@ server <- function(input,output) {
   })
   
   #Analyis
-  fit.reitsma <- reitsma(AuditC) #fits a bivariate model
-  sum.fit<-summary(fit.reitsma) #output statistics from the fit 
-  pts.fit <- SummaryPts(fit.reitsma) #outputs posLR, negLR, invnegLR and DOR (as samples, have to mean to extract output)
+  fit.reitsma <- reitsma(AuditC)#fits a bivariate model
+  sum.fit <- summary(fit.reitsma)
+  pts.fit <- SummaryPts(fit.reitsma)
+ #outputs posLR, negLR, invnegLR and DOR (as samples, have to mean to extract output)
   
   #Reactive analysis
   fitting <- reactive({
@@ -125,7 +137,8 @@ server <- function(input,output) {
   plotticks<-logical(length=6) #default of six Falses
   leglabticks <- matrix(nrow=5, ncol=1)
   legendticks <- matrix(nrow=5, ncol=2) #empty matrix for legend arguments
-    output$SROC <- renderPlot({ if ('1' %in% input$bivcheck) {plotticks[1] <- T
+    output$SROC <- renderPlot({
+                                if ('1' %in% input$bivcheck) {plotticks[1] <- T
                                                                 leglabticks[2]<-"Summary estimate"
                                                                 legendticks[2,1]<-1} #change plotticks and legendticks if option 1 selected
                                 if ('2' %in% input$bivcheck) {plotticks[2] <- T
@@ -141,6 +154,7 @@ server <- function(input,output) {
                                 if ('1' %in% input$HSROCcheck) {plotticks[6] <- T
                                                                 leglabticks[1]<-"HSROC curve"
                                                                 legendticks[1,2]<-1}
+
                                   plot(fit.reitsma, main = "Bivariate model for AUDIT-C data",
                                        HSROC=plotticks[6], extrapolate=plotticks[4], plotsumm=plotticks[2], predict=plotticks[3], pch="", sroclwd=2) #plot where options are dependent on interactive vector plotticks
                                   if (plotticks[5]==T) {points(fpr(AuditC), sens(AuditC), pch=2)} #add data points
@@ -162,26 +176,31 @@ server <- function(input,output) {
   output$Beta <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[3]))) #beta
   output$Sigth <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[4]))) #sigma_theta
   output$Sigal <- renderText(print(sprintf("%4.3f", sum.fit$coef_hsroc[5]))) #sigma_alpha
+  output$cov <- renderText(print(sprintf("%4.3f", sum.fit$corRandom[2,1])))
   #Making the print statistics interactive with the pulldown menu:
   output$senscheck <- reactive({'1' %in% input$statscheck}) #reactive boolean to see whether '1' (sensitivity has been checked) is in the checklist
   output$speccheck <- reactive({'2' %in% input$statscheck}) #needs to be reactive as can't do the correct condition in JavaScript
-  output$AUCcheck <- reactive({'3' %in% input$statscheck})
-  output$FPRcheck <- reactive({'4' %in% input$statscheck})
-  output$DORcheck <- reactive({'5' %in% input$statscheck})
-  output$LRcheck <- reactive({'6' %in% input$statscheck})
-  output$HSROCcheck <- reactive({'7' %in% input$statscheck})
+  output$covcheck <- reactive({'3' %in% input$statscheck})
+  output$AUCcheck <- reactive({'4' %in% input$statscheck})
+  output$FPRcheck <- reactive({'5' %in% input$statscheck})
+  output$DORcheck <- reactive({'6' %in% input$statscheck})
+  output$LRcheck <- reactive({'7' %in% input$statscheck})
+  output$HSROCcheck <- reactive({'8' %in% input$statscheck})
 outputOptions(output, "senscheck", suspendWhenHidden = FALSE) #option needed for conditional to function properly
 outputOptions(output, "speccheck", suspendWhenHidden = FALSE)
+outputOptions(output, "covcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "AUCcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "FPRcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "DORcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "LRcheck", suspendWhenHidden = FALSE)
 outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
   #Adding confidence intervals
-  output$sensCI <- renderText(print(sprintf("(%4.3f, %4.3f)", sum.fit$coefficients[3,5], sum.fit$coefficients[3,6]), quote=F))
-  output$specCI <- renderText(print(sprintf("(%4.3f, %4.3f)", 1-sum.fit$coefficients[4,6], 1-sum.fit$coefficients[4,5]), quote=F))
-  output$FPRCI <- renderText(print(sprintf("(%4.3f, %4.3f)", sum.fit$coefficients[4,5], sum.fit$coefficients[4,6]), quote=F))
-
+  output$sensCI <- renderText(print(sprintf("CI = (%4.3f, %4.3f)", sum.fit$coefficients[3,5], sum.fit$coefficients[3,6]), quote=F))
+  output$specCI <- renderText(print(sprintf("CI = (%4.3f, %4.3f)", 1-sum.fit$coefficients[4,6], 1-sum.fit$coefficients[4,5]), quote=F))
+  output$FPRCI <- renderText(print(sprintf("CI = (%4.3f, %4.3f)", sum.fit$coefficients[4,5], sum.fit$coefficients[4,6]), quote=F))
+  output$pLRsd <- renderText(print(sprintf("SD = %4.3f", sd(pts.fit$posLR))))
+  output$nLRsd <- renderText(print(sprintf("SD = %4.3f", sd(pts.fit$negLR))))
+  output$DORsd <- renderText(print(sprintf("SD = %4.3f", sd(pts.fit$DOR))))
   
   #Add table of studies
   output$sumdata <- DT::renderDataTable({ datatable(AuditC, colnames=c("Author","Year", "TP","FN", "FP", "TN", "No. of participants", "Sensitivity", "False-positive rate"))  })
@@ -246,6 +265,7 @@ output$curspec <- renderText({
  sum.fitb <- summm()
   print(sprintf("%4.3f (%4.3f, %4.3f)", sum.fitb$coefficients[4,1], sum.fitb$coefficients[4,5], sum.fitb$coefficients[4,6])) })
 
+output$ext <- renderText({ paste("Test to extend page", "<font color=\"#FF0000\"><b>")})
   
 }
 
