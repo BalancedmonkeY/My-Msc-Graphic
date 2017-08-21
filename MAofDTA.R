@@ -54,12 +54,12 @@ ui <- fluidPage(
                  ),
 
   tabPanel("Sensitivity Analysis", 
-           column(3, wellPanel(checkboxGroupInput(inputId="studies", label="Included studies",
+           fluidRow(column(3, wellPanel(checkboxGroupInput(inputId="studies", label="Included studies",
                                                   choices=list("Aalto (2006)"=1, "Aertgeerts (2001)"=2, "Aertgeerts (2002)"=3, "Bradley (2003)"=4, "Bradley (2007)"=5, "Bush (1998)"=6, "Gomez (2006)"=7, "Gordon (2001)"=8, "Gual (2002)"=9, "Rumpf (2002)"=10, "Seale (2006)"=11, "Selin (2006)"=12, "Tsai (2005)"=13, "Tuunanen (2007)"=14),
                                                   selected=list(1,2,3,4,5,6,7,8,9,10,11,12,13,14)), #checkboxes for studies
                                actionButton(inputId="rerun", label="RUN ANALYSIS") #Button to initiate re-running of sensitivity analysis
                                )),
-           column(9, fluidRow(column(7, align="center", plotOutput(outputId="SROCb", width="550px", height="550px")), #plot
+           column(9, fluidRow(column(7, align="center", uiOutput(outputId="sensplot")), #interactive plot
                               column(5, wellPanel(fluidRow(h4("Plot options")), #plot options
                                                   fluidRow(checkboxInput(inputId="dataptscheck2", label="Data points", value=T)),
                                                   fluidRow(checkboxGroupInput(inputId = "bivcheck2", label = "Bivariate model options", 
@@ -74,7 +74,9 @@ ui <- fluidPage(
                                          column(5, h5("Current Analysis"),
                                                    h6(textOutput("cursens")),
                                                    h6(textOutput("curspec")))))   ))#current results 
-           )
+           )),
+    fluidRow(wellPanel(h5("Hover over plot for individual study summaries"),
+                       textOutput("hoverinfo")))
   )
 )
 )
@@ -89,7 +91,7 @@ server <- function(input,output) {
   AuditC$Author <- c("Aalto","Aertgeerts", "Aertgeerts", "Bradley", "Bradley", "Bush", "Gomez", "Gordon", "Gual", "Rumpf", "Seale", "Selin", "Tsai", "Tuunanen")
   AuditC$Year <- c(2006, 2001, 2002, 2003, 2007, 1998, 2006, 2001, 2002, 2002, 2006, 2006, 2005, 2007)
   #Add sens and spec (to 3 dp)
-  AuditC$sensitivity <- round(sens(AuditC), digits=3)
+  AuditC$Sensitivity <- round(sens(AuditC), digits=3)
   AuditC$FalsePositiveRate <- round(fpr(AuditC), digits=3)
   #Add total number of participants
   AuditC$No_of_participants <- AuditC$TP+AuditC$FN+AuditC$FP+AuditC$TN
@@ -190,6 +192,9 @@ outputOptions(output, "HSROCcheck", suspendWhenHidden = FALSE)
   leglabticks2 <- matrix(nrow=5, ncol=1)
   legendticks2 <- matrix(nrow=5, ncol=2)
   
+output$sensplot <- renderUI ({
+  plotOutput("SROCb", height="550px", width="550px", hover=hoverOpts(id="plot_hover")) }) #render the UI before rendering the plot
+
 output$SROCb <- renderPlot ({
   
   sensdata <- curdata() #bring in the reactive dataset and summaries needed
@@ -224,6 +229,12 @@ output$SROCb <- renderPlot ({
   if (plotticks2[1]==T) {points(sum.fitb$coefficients[4,1], sum.fitb$coefficients[3,1])}
   legend("bottomright", bty="n", leglabticks2, pch = legendticks2[,1], lty=legendticks2[,2], lwd=c(2,NA,1,1,NA))
   })
+
+#Hover information
+output$hoverinfo <- renderText({
+hoverselect <- nearPoints(AuditC, input$plot_hover, xvar="FalsePositiveRate", yvar="Sensitivity", threshold=5, maxpoints=1) #takes the row from the dataframe that matches the hover point (only allowed one)
+print(sprintf("%10s (%4.0f) : Sens. = %4.3f FP-rate = %4.3f", hoverselect$Author, hoverselect$Year, hoverselect$Sensitivity, hoverselect$FalsePositiveRate))
+})
 
 #Sensitivity summary values
 output$origsens <- renderText(print(sprintf("Sensitivity: %4.3f (%4.3f, %4.3f)", sum.fit$coefficients[3,1], sum.fit$coefficients[3,5], sum.fit$coefficients[3,6])))
