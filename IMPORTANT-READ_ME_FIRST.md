@@ -15,7 +15,7 @@ To run on R:
    iv) Browse within your computer and select the madaedit.tar.gz file that was downloaded at the beginning
    v) Click 'Install'
 5. Your console should now have the ammended mada package. This is the exact same as the original mada package [1], and so functions as standard but has an additional option. When using plot(reitsma.object), to include the SROC curve, HSROC has to be set to true (e.g. plot(fit.reitsma, HSROC=T,...))
-6. Now all the packages should be installed the application can be run. Simply clikc 'Run App' in the top right hand corner of the R Script panel and the apploication should open.
+6. Now all the packages should be installed the application can be run. Simply click 'Run App' in the top right hand corner of the R Script panel and the application should open.
 
 [1] Philipp Doebler (2014). mada: Meta-Analysis of Diagnostic Accuracy (mada). R package version 0.5.6.
   https://CRAN.R-project.org/package=mada
