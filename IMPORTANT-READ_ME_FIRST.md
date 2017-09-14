@@ -6,8 +6,8 @@ To run on R:
 2. If your R console already has "mada" installed this needs to be manually removed:
    i) Find where you set your R working directory to be (can use the command getwd() if unsure)
    ii) Go to the working directory then -> R -> win-library -> 3.3 (version number)
-   iii) You should now see all the packages installed in folders. Delete the "mada" folder
-   NOTE: This must be done before opening RStudio. 
+   iii) You should now see all the packages installed in folders. Delete the "mada" folder.
+   NOTE: This must be done before opening RStudio. If RStudio is opening during this process make sure you restart the session (close and open) after deleting 'mada' (otherwise the package won't be successfully removed).
 3. Open MAofDTA.R within RStudio and install all the packages within library() commands - except for "mada"
 4. Download the ammended mada package:
    i) In RStudio go to the 'Packages' tab in the bottom right panel
