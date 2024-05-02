@@ -7,3 +7,5 @@ I'm adding text from my computer.
 I'm adding text from GitHub (again)
 
 Adding text whilst on branch 1
+Adding text whilst on branch 2.
+  
